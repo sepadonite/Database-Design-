@@ -1,1 +1,2 @@
 # Database-Design-
+This course will provide a solid and practical foundation for the design and implementation of database systems. Emphasis will be on relational database models, with significant coverage of basic relational database concepts, normalization, E-R modeling, locking, SQL, and distributed databases. Additional topics include web database, database security, access control policies and procedures, risk management, and ethical aspects of information handling. Course software includes current database tools such as SQL server.
