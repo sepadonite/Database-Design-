@@ -1,0 +1,166 @@
+
+Note: your query should be based on the actual data. It is good to gain familiarity with table contents before starting to query. 
+Query should use as few tables as possible if a JOIN is required. Sometimes a single table may contain all the attribute you need.
+
+--------Some question clarifications:------
+Question 1: Multi-color bikes with red are considered red bikes.
+Question 2: Orders completed without the help of a retail store are walk-in or direct sales.
+Question 7: Inventory value is defined as [EstimatedCost]*[QuantityOnHand] in Component.
+Question 10: Use 2002 for both amount spent and number of bikes bought. Use OrderDate when determining year. Use SalePrice as amount spent.
+Question 11: We are looking for any bike with a model type that starts with the word Mountain.
+Question 12: The amount spent on a component is the sum of purchase price * quantity. Please the same component may have been purchased multiple times in a time period.
+Question 17: As output you may show the number of bikes for both materials. Use OrderDate.
+Question 28: Use the difference between OrderDate and ShipDate.
+*/
+--====================================================Exercise Questions =====================================================
+--==========================================& Expected output table columns ===================================================
+
+--1. List the customers from California who bought red mountain bikes in September 2003. Use order date as date bought. 
+--CustomerID	LastName	FirstName	ModelType	ColorList	OrderDate	SaleState
+ SELECT C.CustomerID, C.LastName, C. FirstName, B.ModelType, P.ColorList, B.OrderDate, B.SaleState
+	 FROM Customer C 
+	 INNER JOIN Bicycle B 
+		 ON C.CustomerID = B.CustomerID
+	INNER JOIN Paint P
+		ON B.PaintID = P.PaintID
+			WHERE P.ColorList = 'RED' AND B.SaleState = 'CA' AND B.ModelType ='Mountain' AND B.OrderDate BETWEEN '2003-09-01' AND '2003-09-30';
+--2. List the employees who sold race bikes shipped to Wisconsin without the help of a retail store in 2001
+--EmployeeID	LastName	SaleState	ModelType	StoreID	OrderDate
+SELECT * FROM Employee;
+ SELECT E.EmployeeID, E.LastName, B.SaleState, B.ModelType, B.StoreID, B.OrderDate
+	FROM Employee E 
+		INNER JOIN Bicycle B
+			ON E.EmployeeID = B.EmployeeID
+				WHERE B.ModelType='Race' AND SaleState = 'WI' AND OrderDate BETWEEN '2001-01-01' AND '2001-12-31' AND NOT B.StoreID IN('1','2') ;
+--3. List all of the (distinct) rear derailleurs installed on road bikes sold in Florida in 2002.
+--ComponentID	ManufacturerName	ProductNumber
+ SELECT DISTINCT(C.ComponentID), M.ManufacturerName,C.ProductNumber	
+	FROM Bicycle B
+		LEFT JOIN BikeParts P
+			ON B.SerialNumber=P.SerialNumber
+		LEFT JOIN Component C
+			ON P.ComponentID = C.ComponentID
+		LEFT JOIN Manufacturer M
+			ON M.ManufacturerID = C.ManufacturerID
+				WHERE C.Category ='Rear derailleur' AND B.SaleState = 'FL' AND B.ModelType= 'Road' AND B.OrderDate BETWEEN '2002-01-01' AND '2002-12-31';
+--4. Who bought the largest (frame size) full suspension mountain bike sold in Georgia in 2004?
+--CustomerID	LastName	FirstName	ModelType	SaleState	FrameSize	OrderDate
+SELECT C.CustomerID, C.LastName, C.FirstName, B.ModelType, B.SaleState,MAX( B.FrameSize), B.OrderDate
+	FROM Customer C 
+		FULL OUTER JOIN Bicycle B
+			ON C.CustomerID = B.CustomerID
+				WHERE B.ModelType = 'Mountain full' AND B.SaleState ='GA' AND B.OrderDate BETWEEN '2004-01-01' AND '2004-12-31';
+--5. Which manufacturer gave us the largest discount on an order in 2003?
+ SELECT M.ManufacturerID, M.ManufacturerName
+	FROM PurchaseOrder P
+		CROSS JOIN Manufacturer M
+			WHERE P.ManufacturerID = M.ManufacturerID AND P.OrderDate BETWEEN '2003-01-01' AND '2003-12-31';
+--6. What is the most expensive road bike component we stock that has a quantity on hand greater than 200 units?
+--ComponentID	ManufacturerName	ProductNumber	Road	Category	ListPrice	QuantityOnHand
+ 
+--7. Which inventory item represents the most money sitting on the shelf—based on estimated cost?
+--ComponentID	ManufacturerName	ProductNumber	Category	Year	Value
+ 
+--8. What is the greatest number of components ever installed in one day by one employee?
+--EmployeeID	LastName	DateInstalled	CountOfComponentID
+ 
+--9. What was the most popular letter style on race bikes in 2003?
+--LetterStyleID	CountOfSerialNumber
+ 
+--10. Which customer spent the most money with us and how many bicycles did that person buy in 2002?
+--CustomerID	LastName	FirstName	Number of Bikes	Amount Spent
+ 
+--11. Have the sales of mountain bikes (full suspension or hard tail) increased or decreased from 2000 to 2004 (by count not by value)?
+--SaleYear	CountOfSerialNumber
+ 
+--12. Which component did the company spend the most money on in 2003?
+--ComponentID	ManufacturerName	ProductNumber	Category	Value
+ 
+--13. Which employee painted the most red race bikes in May 2003?
+--EmployeeID	LastName	Number Painted
+ 
+--14. Which California bike shop helped sell the most bikes (by value) in 2003?
+--StoreID	StoreName	City	SumOfSalePrice
+ 
+--15. What is the total weight of the components on bicycle 11356?
+ --TotalWeight
+ SELECT SUM(C.Weight) AS TotalWeight
+	FROM Component C
+	INNER JOIN BikeParts P
+		ON C.ComponentID = P.ComponentID
+	INNER JOIN Bicycle B
+		ON B.SerialNumber = P.SerialNumber
+			WHERE B.SerialNumber='11356';
+
+--16. What is the total list price of all items in the 2002 Campy Record groupo?
+--GroupName	SumOfListPrice
+SELECT* FROM Component;
+ SELECT G.GroupName, SUM(C.ListPrice)AS SumOfListPrice
+	FROM Groupo G
+		INNER JOIN GroupComponents S
+			ON G.ComponentGroupID = S.GroupID
+		INNER JOIN Component C
+			ON S.ComponentID = C.ComponentID
+				WHERE G.GroupName ='Campy Record 2002'
+					GROUP BY G.GroupName;
+--17. In 2003, were more race bikes built from carbon or titanium (based on the down tube)?
+--Material	CountOfSerialNumber 
+ 
+--18. What is the average price paid for the 2001 Shimano XTR rear derailleurs?
+--AvgOfPricePaid
+ 
+--19. What is the average top tube length for a 54 cm (frame size) road bike built in 1999?
+--AvgOfTopTube
+ 
+--20. On average, which costs (list price) more: road tires or mountain bike tires?
+--Road	AvgOfListPrice
+ 
+--21. In May 2003, which employees sold road bikes that they also painted?
+--EmployeeID	LastName
+ 
+--22. In 2002, was the Old English letter style more popular with some paint jobs?
+--PaintID	ColorName	Number of Bikes Painted
+ 
+--23. Which race bikes in 2003 sold for more than the average price of race bikes in 2002?
+--SerialNumber	ModelType	OrderDate	SalePrice
+ 
+ 
+--24. Which component that had no sales (installations) in 2004 has the highest inventory value (cost basis)?
+--ManufacturerName	ProductNumber	Category	Value	ComponentID
+SELECT M.ManufacturerName, C.ProductNumber, C.Category, C.ComponentID, MAX( C.QuantityOnHand *C.ListPrice) AS VALUE 
+	FROM Component C
+		FULL OUTER JOIN Manufacturer M
+			ON C.ManufacturerID = M.ManufacturerID
+		FULL OUTER JOIN PurchaseItem I
+			ON I.ComponentID = C.ComponentID
+		FULL OUTER JOIN BikeParts P
+			ON P.ComponentID = C.ComponentID
+		FULL OUTER JOIN Bicycle B
+			ON B.SerialNumber = P.SerialNumber
+				WHERE P.DateInstalled IS NULL AND  B.OrderDate BETWEEN '2004-01-01' AND '2004-12-31'
+				GROUP BY M.ManufacturerName, C.ProductNumbeR, C.Category, C.ComponentID;
+--25. Create a vendor contacts list of all manufacturers and retail stores in California.Include only the columns for VendorName and Phone. The retail stores should only include stores that participated in the sale of at least one bicycle in 2004
+--Store Name Or Manufacturer Name	Phone
+ SELECT R.StoreName, R.Phone
+	FROM RetailStore R
+		CROSS JOIN Bicycle B
+			WHERE B.OrderDate BETWEEN '2004-01-01' AND '2004-12-31'
+UNION ALL
+SELECT M.ManufacturerName, M.Phone
+	FROM Manufacturer M
+		CROSS JOIN PurchaseOrder O
+			WHERE O.OrderDate BETWEEN '2004-01-01' AND '2004-12-31';
+
+--26. List all of the employees who report to Venetiaan.
+--LastName	EmployeeID	LastName	FirstName	Title
+SELECT * FROM Employee;
+SELECT E.LastName, E.EmployeeID, E.LastName, E.FirstName, E.Title
+	FROM Employee E
+				WHERE E.CurrentManager =(SELECT EmployeeID
+											FROM Employee
+												WHERE LastName = 'Venetiaan');
+--27. List the components where the company purchased at least 25 percent more units than it used through June 30, 2000.
+--ComponentID	ManufacturerName	ProductNumber	Category	TotalReceived	TotalUsed	NetGain	NetPct	ListPrice
+ 
+--28. In which years did the average build time for the year exceed the overall average build time for all years? The build time is the difference between order date and ship date.
+--Year	BuildTime

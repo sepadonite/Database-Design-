@@ -1,0 +1,427 @@
+
+/*
+--------Answering Group--------
+GROUP 2: 1-6, 15-28	Eric Rixman, Jiani Wu, Kurtis Edwards, Nahn Nguyen
+GROUP 5: 7, 8-14	Emmanuel Haynes, Ethan Epperson, Troy Smith
+*/
+
+/*
+----------Grading Group--------
+GROUP 2: Michelle Green, Cooper Jordan, La'Daysha Wade
+GROUP 5: Daniel Fuentes, Davin Tran
+*/
+
+
+/*
+Note: your query should be based on the actual data. It is good to gain familiarity with table contents before starting to query. 
+Query should use as few tables as possible if a JOIN is required. Sometimes a single table may contain all the attribute you need.
+
+--------Some question clarifications:------
+Question 1: Multi-color bikes with red are considered red bikes.
+Question 2: Orders completed without the help of a retail store are walk-in or direct sales.
+Question 7: Inventory value is defined as [EstimatedCost]*[QuantityOnHand] in Component.
+Question 10: Use 2002 for both amount spent and number of bikes bought. Use OrderDate when determining year. Use SalePrice as amount spent.
+Question 11: We are looking for any bike with a model type that starts with the word Mountain.
+Question 12: The amount spent on a component is the sum of purchase price * quantity. Please the same component may have been purchased multiple times in a time period.
+Question 17: As output you may show the number of bikes for both materials. Use OrderDate.
+Question 28: Use the difference between OrderDate and ShipDate.
+*/
+--====================================================Exercise Questions =====================================================
+--==========================================& Expected output table columns ===================================================
+
+USE BIKE;
+
+
+--1. List the customers from California who bought red mountain bikes in September 2003. Use order date as date bought. Multi-color bikes with red are considered red bikes.
+--CustomerID	LastName	FirstName	ModelType	ColorList	OrderDate	SaleState
+
+ SELECT B.CustomerID, C.LastName, C.FirstName, ModelType, ColorList, OrderDate, SaleState
+	FROM CUSTOMER C INNER JOIN Bicycle B ON C.CustomerID = B.CustomerID
+		INNER JOIN Paint ON B.PaintID = Paint.PaintID
+			WHERE B.SaleState LIKE '%CA' AND
+				B.ModelType LIKE 'Mountain' AND
+				Paint.ColorList LIKE '%RED%'AND
+				B.OrderDate BETWEEN '2003-09-01' AND '2003-09-30';
+
+--5/5 no errors in execution and answers all business queries. LIKE is not necessary is B.SalesState in WHERE statement.
+
+--2. List the employees who sold race bikes shipped to Wisconsin without the help of a retail store in 2001
+--EmployeeID	LastName	SaleState	ModelType	StoreID	OrderDate
+
+ SELECT E.EmployeeID, E.LastName, SaleState, ModelType, B.StoreID, OrderDate
+	FROM Bicycle B INNER JOIN Employee E ON B.EmployeeID = E.EmployeeID
+		INNER JOIN RetailStore RS ON B.StoreID = RS.StoreID
+		WHERE B.ModelType LIKE 'Race' AND
+			B.SaleState = 'WI' AND
+			(RS.StoreName = 'Walk-In' OR RS.StoreName = 'Direct Sales') AND
+			B.OrderDate IN (SELECT OrderDate
+								FROM Bicycle
+									WHERE OrderDate BETWEEN '2001-01-01' AND '2001-12-31');
+
+--5/5 no errors in execution and answers all business questions. could have been made shorter by using YEAR(OrderDate)=2001.
+
+--3. List all of the (distinct) rear derailleurs installed on road bikes sold in Florida in 2002.
+--ComponentID	ManufacturerName	ProductNumber
+
+SELECT DISTINCT CP.ComponentID, ManufacturerName, ProductNumber
+FROM  Bicycle B
+		INNER JOIN BikeParts BP ON BP.SerialNumber = B.SerialNumber
+		INNER JOIN Component CP ON CP.ComponentID = BP.ComponentID
+		INNER JOIN Manufacturer MF ON MF.ManufacturerID = CP.ManufacturerID
+		WHERE SaleState LIKE '%FL' AND ModelType LIKE 'Road' AND
+				B.OrderDate BETWEEN '2002-01-01' AND '2003-12-31';
+
+--4.9/5 no errors in execution and most business queries. LIKE is not necessary and YEAR(B.OrderDate)=2002 to make shorter. 2003 was used in later half of B.OrderDate BETWEEN.
+
+--4. Who bought the largest (frame size) full suspension mountain bike sold in Georgia in 2004?
+--CustomerID	LastName	FirstName	ModelType	SaleState	FrameSize	OrderDate
+
+SELECT C.CustomerID,  LastName, FirstName, ModelType, SaleState,FrameSize
+FROM Customer C INNER JOIN Bicycle B ON C.CustomerID = B.CustomerID
+		WHERE 
+			ModelType LIKE 'Mountain' AND
+		SaleState LIKE '%GA' AND
+		OrderDate IN (SELECT OrderDate	
+				FROM Bicycle
+					WHERE OrderDate BETWEEN '2004-01-01' AND '2004-12-31') AND FrameSize = 												(SELECT TOP 1 FrameSize
+											FROM Customer C INNER JOIN Bicycle B 
+												ON C.CustomerID = B.CustomerID
+													WHERE ModelType LIKE 'Mountain' AND SaleState LIKE '%GA' AND OrderDate IN (SELECT OrderDate
+							FROM Bicycle
+								WHERE OrderDate BETWEEN '2004-01-01' AND '2004-12-31' )ORDER BY FrameSize DESC );
+
+--4.7 no errors in execution and most business queries are answered. ModelType LIKE 'Mountain' should be ModelType='Mountain full' to only include Mountain bikes with full suspension. '%GA' is not necessary and YEAR(OrderDate)=2004 to make short. TOP 1 is not necessary
+
+--5. Which manufacturer gave us the largest discount on an order in 2003?
+--ManufacturerID	ManufacturerName
+
+ SELECT M.ManufacturerID, M.ManufacturerName
+	FROM Manufacturer M INNER JOIN PurchaseOrder PO
+		 ON M.ManufacturerID = PO.ManufacturerID
+			WHERE PO.OrderDate IN (SELECT OrderDate	WHERE OrderDate BETWEEN '2003-01-01' AND '2003-12-31') AND Discount =( SELECT TOP 1 Discount
+				FROM Manufacturer M INNER JOIN PurchaseOrder PO 
+					ON M.ManufacturerID = PO.ManufacturerID 
+						WHERE PO.OrderDate IN (SELECT OrderDate 
+							FROM PurchaseOrder 												WHERE OrderDate BETWEEN '2003-01-01' AND '2003-12-31') ORDER BY Discount DESC);
+			
+--4.9/5 no error in execution and answers all business queries correctly.YEAR(OrderDate)=2003 to make shorter and TOP1 and IN not necessary.
+
+--6. What is the most expensive road bike component we stock that has a quantity on hand greater than 200 units?
+--ComponentID	ManufacturerName	ProductNumber	Road	Category	ListPrice	QuantityOnHand
+
+SELECT TOP 1 CP.ComponentID, ManufacturerName, ProductNumber, Road, Category, CP.ListPrice, QuantityOnHand,ModelType
+	FROM  Bicycle B
+		INNER JOIN BikeParts BP ON BP.SerialNumber = B.SerialNumber
+		INNER JOIN Component CP ON CP.ComponentID = BP.ComponentID
+		INNER JOIN Manufacturer MF ON MF.ManufacturerID = CP.ManufacturerID
+			WHERE  QuantityOnHand>200 AND  ModelType LIKE '%Road'AND  CP.ListPrice >=(SELECT TOP 1 CP.ListPrice
+	FROM  Bicycle B
+		INNER JOIN BikeParts BP ON BP.SerialNumber = B.SerialNumber
+		INNER JOIN Component CP ON CP.ComponentID = BP.ComponentID
+		INNER JOIN Manufacturer MF ON MF.ManufacturerID = CP.ManufacturerID
+			WHERE QuantityOnHand>200 AND  ModelType LIKE '%Road' ORDER BY ListPrice DESC)
+			ORDER BY ListPrice DESC;
+
+--4.7/5 no errors in execution and answers all business queries. TOP 1 is not necessary only Manufacturer and Component need to be joined. LIKE '%Road' is not necessary.
+
+--7. Which inventory item represents the most money sitting on the shelf—based on estimated cost?
+--ComponentID        ManufacturerName        ProductNumber        Category        Year        Value
+
+ SELECT TOP 1 C.COMPONENTID, M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY, C.YEAR, (C.ESTIMATEDCOST) AS [VALUE]
+        FROM COMPONENT C INNER JOIN MANUFACTURER M ON C.MANUFACTURERID = M.ManufacturerID
+                ORDER BY [VALUE] DESC;
+
+--4/5 no errors in execution and most business queries	are answered. SUM(EstimatedCost*QuantityOnHand) AS Value GROUP BY and HAVING statement are needed 
+
+--8. What is the greatest number of components ever installed in one day by one employee?
+--EmployeeID        LastName        DateInstalled        CountOfComponentID
+
+
+ SELECT TOP 1 E.EMPLOYEEID, E.LASTNAME, BP.DATEINSTALLED, COUNT(BP.COMPONENTID) AS [COUNTOFCOMPONENTS]
+        FROM EMPLOYEE E INNER JOIN BIKEPARTS BP ON E.EMPLOYEEID = BP.EMPLOYEEID
+                WHERE BP.DATEINSTALLED IS NOT NULL
+                        GROUP BY E.EmployeeID, E.LASTNAME, BP. DateInstalled
+                                ORDER BY [COUNTOFCOMPONENTS] DESC;
+
+--5/5 - This query will find the employee that has installed the greatest number of components in a single day with no issues.
+
+--9. What was the most popular letter style on race bikes in 2003?
+--LetterStyleID        CountOfSerialNumber
+SELECT TOP 1 LetterStyleID, COUNT(LETTERSTYLEID) AS [COUNTOFSERIALNUMBER]
+        FROM BICYCLE
+                WHERE YEAR(OrderDate) = '2003' AND ModelType = 'RACE'
+                        GROUP BY LETTERSTYLEID
+                                ORDER BY [COUNTOFSERIALNUMBER] DESC;
+
+--5/5 - This query filters the results to include bicycles with an OrderDate in 2003 and a ModelType of 'Race' and then groups the results without any issues.
+
+--10. Which customer spent the most money with us and how many bicycles did that person buy in 2002?
+--CustomerID        LastName        FirstName        Number of Bikes        Amount Spent
+
+
+ SELECT C.CUSTOMERID, C.LASTNAME, C.FIRSTNAME, SUM(CT.AMOUNT) AS AMOUNT_SPENT, COUNT(B.SERIALNUMBER) AS NUMBER_OF_BIKES
+        FROM CUSTOMER C INNER JOIN CustomerTransaction CT ON C.CustomerID = CT.CustomerID INNER JOIN BICYCLE B ON B.CustomerID = C.CustomerID
+                WHERE CT.TransactionDate = '2002'
+                        GROUP BY C.CUSTOMERID, C.LASTNAME, C.FIRSTNAME
+                                HAVING SUM(CT.AMOUNT) = (SELECT TOP 1 SUM(CT.AMOUNT)
+                                                                                        FROM CUSTOMER C INNER JOIN CustomerTransaction CT ON C.CustomerID = CT.CustomerID INNER JOIN BICYCLE B ON B.CustomerID = C.CustomerID
+                                                                                                WHERE CT.TransactionDate = '2002'
+                                                                                                        GROUP BY C.CUSTOMERID, C.LASTNAME, C.FIRSTNAME
+                                                                                                                ORDER BY SUM(CT.AMOUNT) DESC);
+
+--5/5 - This query runs with no issues. It retrieves data on customers who made transactions in 2002 and groups the data by customer ID, last name, and first name.
+                                                
+--11. Have the sales of mountain bikes (full suspension or hard tail) increased or decreased from 2000 to 2004 (by count not by value)?
+--SaleYear        CountOfSerialNumber
+
+
+ SELECT YEAR(ORDERDATE) AS SaleYear, COUNT(SERIALNUMBER) AS CountofSerialNumber
+        FROM BICYCLE  
+                WHERE MODELTYPE = 'MOUNTAIN'
+                        GROUP BY YEAR(ORDERDATE)
+                                HAVING YEAR(ORDERDATE) >= '2000' AND YEAR(ORDERDATE) <= '2004'
+                                        ORDER BY YEAR(ORDERDATE) DESC;
+
+--2.5/5 - This query provides the count of bikes sold in each year, but doesn't differentiate between the full suspension and hardtail bikes.
+                
+--12. Which component did the company spend the most money on in 2003?
+--ComponentID        ManufacturerName        ProductNumber        Category        Value
+
+ SELECT C.COMPONENTID, M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY, SUM(PI.PRICEPAID * PI.QUANTITY) AS VALUE
+        FROM PURCHASEORDER PO INNER JOIN PURCHASEITEM PI ON PO.PURCHASEID = PI.PURCHASEID INNER JOIN COMPONENT C ON PI.COMPONENTID = C.COMPONENTID INNER JOIN MANUFACTURER M ON C.MANUFACTURERID = M.MANUFACTURERID
+                WHERE YEAR(PO.ORDERDATE) = '2003'
+                        GROUP BY C.COMPONENTID, M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY
+                                HAVING SUM(PI.PRICEPAID * PI.QUANTITY) = (SELECT TOP 1 SUM(PI.PRICEPAID * PI.QUANTITY)
+                                                                                                                        FROM PURCHASEORDER PO INNER JOIN PURCHASEITEM PI ON PO.PURCHASEID = PI.PURCHASEID INNER JOIN COMPONENT C ON PI.COMPONENTID = C.COMPONENTID INNER JOIN MANUFACTURER M ON C.MANUFACTURERID = M.MANUFACTURERID
+                                                                                                                                WHERE YEAR(PO.ORDERDATE) = '2003'
+                                                                                                                                        GROUP BY C.COMPONENTID, M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY
+                                                                                                                                                ORDER BY SUM(PI.PRICEPAID * PI.QUANTITY) DESC);
+                                        
+--5/5 - This query looks good. It will give you the corrext component that the company spent the money on in 2003 by joing the PurchaseOrder, PurchaseItem, Component, and Manufactuerer tables to get the relevant information and using the HAVING clause to filter for a component.
+
+--13. Which employee painted the most red race bikes in May 2003?
+--EmployeeID        LastName        Number Painted
+
+
+ SELECT E.EMPLOYEEID, E.LASTNAME, COUNT(B.SERIALNUMBER) AS NUMBER_PAINTED
+        FROM EMPLOYEE E INNER JOIN BICYCLE B ON E.EMPLOYEEID = B.EMPLOYEEID        INNER JOIN PAINT P ON B.PAINTID = P.PAINTID
+                WHERE P.COLORLIST = 'RED'
+                AND B.MODELTYPE = 'RACE'
+                AND MONTH(B.ORDERDATE) = '5'
+                AND YEAR(B.ORDERDATE) = '2003'
+                        GROUP BY E.EMPLOYEEID, E.LASTNAME
+                                HAVING COUNT(SERIALNUMBER) = (SELECT TOP 1 COUNT(SERIALNUMBER));
+
+--2/5 - There is an issue with this query because the subquery in the HAVING clause does not specify which field to order by, so it will not return an accurate result.
+                
+--14. Which California bike shop helped sell the most bikes (by value) in 2003?
+--StoreID        StoreName        City        SumOfSalePrice
+
+ SELECT RS.STOREID, RS.STORENAME, C.CITY, SUM(B.SALEPRICE) AS SUMOFSALEPRICE
+        FROM RETAILSTORE RS INNER JOIN CITY C ON RS.CITYID = C.CITYID INNER JOIN BICYCLE B ON RS.STOREID = B.STOREID
+                WHERE C.STATE = 'CA'
+                AND YEAR(B.ORDERDATE) = '2003'
+                        GROUP BY RS.STOREID, RS.STORENAME, C.CITY
+                                HAVING SUM(B.SALEPRICE) = (SELECT TOP 1 SUM(B.SALEPRICE)
+                                                                                                FROM RETAILSTORE RS INNER JOIN CITY C ON RS.CITYID = C.CITYID INNER JOIN BICYCLE B ON RS.STOREID = B.STOREID
+                                                                                                        WHERE C.STATE = 'CA'
+                                                                                                        AND YEAR(B.ORDERDATE) = '2003'
+                                                                                                                GROUP BY RS.STOREID, RS.STORENAME, C.CITY
+                                                                                                                        ORDER BY SUM(B.SALEPRICE) DESC);
+
+--5/5 Query executes correctly and retrieves the correct data.
+
+--15. What is the total weight of the components on bicycle 11356?
+ --TotalWeight
+
+SELECT SUM(c.Weight) AS TotalWeight
+	FROM BikeParts bp
+	JOIN Component c ON bp.ComponentID = c.ComponentID
+		WHERE bp.SerialNumber = '11356';
+
+--2.5/5 Query executes correctly and joins the correct tables but fails to use the correct function and thus the data retrieved is incorrect.
+
+--16. What is the total list price of all items in the 2002 Campy Record groupo?
+--GroupName	SumOfListPrice
+
+SELECT g.GroupName, SUM(c.ListPrice) AS SumOfListPrice
+	FROM Groupo g
+		JOIN GroupComponents gc ON g.ComponentGroupID = gc.GroupID
+		JOIN Component c ON gc.ComponentID = c.ComponentID
+		WHERE EXISTS (Select *
+						FROM Groupo
+							WHERE GroupName LIKE 'Campy Record 2002')
+			GROUP BY G.GroupName;
+
+--2/5 Query executes correctly and joins the correct tables but uses the wrong operators and thus retrieves incorrect data(multiple records where only one is expected).
+
+--17. In 2003, were more race bikes built from carbon or titanium (based on the down tube)?
+--Material	CountOfSerialNumber 
+
+ SELECT TM.Material , COUNT(BTU.SerialNumber) AS CountOfSerialNumber
+FROM TubeMaterial TM
+JOIN BicycleTubeUsage BTU ON BTU.TubeID = TM.TubeID
+JOIN Bicycle B ON BTU.SerialNumber = B.SerialNumber
+JOIN BikeTubes BT ON B.SerialNumber = BT.SerialNumber
+WHERE B.OrderDate BETWEEN '2003-01-01' AND '2003-12-31'
+      AND B.ModelType = 'Race'
+      AND TM.Material = 'Carbon' OR TM.Material = 'Titanium'
+      AND BT.TubeName = 'Down'
+GROUP BY TM.Material;
+
+--1.5/5 Query executes correctly but joins unecessary tables, fails to retrieve the expected collumns, and the ones it does retrieve have incorrect data.
+
+--18. What is the average price paid for the 2001 Shimano XTR rear derailleurs?
+--AvgOfPricePaid
+--4.8/5 Query is correctly written and formatted, and it will return the average price paid for the 2001 Shimano XTR rear derailleurs. However can be improved  by explicitly converting the average result to a money data type using the CONVERT() function, which ensures that the result is formatted as currency.
+
+SELECT AVG(PricePaid) AS AvgOfPricePaid
+	FROM PurchaseItem PUI
+		JOIN Component C ON PUI.ComponentID = C.ComponentID
+		JOIN GroupComponents GC ON GC.ComponentID = C.ComponentID
+		JOin Groupo G On G.ComponentGroupID = GC.GroupID
+			WHERE C.Category LIKE 'Rear Derailleur' AND 
+						 EXISTS (Select *
+									FROM Groupo
+										WHERE GroupName LIKE 'Shimano XTR 2001');
+
+--19. What is the average top tube length for a 54 cm (frame size) road bike built in 1999?
+--AvgOfTopTube
+--4.8/5 Query is correct and efficiently  written and will return the the average top tube length for a 54 cm (frame size) road bike built in 1999. Use specific date range instead of BETWEEN for a less error-prone query.
+
+SELECT AVG(TopTube) AS AvgOfTopTube
+	FROM Bicycle
+		WHERE FrameSize = 54 
+		AND OrderDate BETWEEN '1999-01-01' AND '1999-12-31'
+		AND ModelType = 'Road';
+
+--20. On average, which costs (list price) more: road tires or mountain bike tires?
+--Road	AvgOfListPrice
+--3.8/5 The query produces the correct result but can be simplified by directly selecting the road and mountain tire categories using the LIKE operator in the WHERE clause. The use of CASE statements is unnecessary as the Road column can be used directly in the GROUP BY clause.
+ SELECT
+  CASE
+    WHEN Road = 'Road' THEN 'Road'
+    WHEN Road = 'Mountain' THEN 'Mountain'
+  END AS TireType,
+  AVG(ListPrice) AS AvgOfListPrice
+FROM Component
+WHERE Road IN ('Road', 'Mountain')
+GROUP BY Road;
+
+--21. In May 2003, which employees sold road bikes that they also painted?
+--EmployeeID	LastName
+--4.8/5 The Query is correct and executes well, but can be improved by  using the DISTINCT keyword and explicitly checking for the year and month of the OrderDate column using the YEAR() and MONTH() functions.
+
+ SELECT E.EmployeeID, E.LastName
+FROM Employee E
+INNER JOIN  Bicycle B ON E.EmployeeID = B.EmployeeID
+WHERE B.OrderDate BETWEEN '2003-05-01' AND '2003-05-31'
+	AND B.ModelType = 'Road'
+	AND B.EmployeeID = B.Painter;
+
+--22. In 2002, was the Old English letter style more popular with some paint jobs?
+--PaintID	ColorName	Number of Bikes Painted
+
+ SELECT B.PAINTID, P.COLORNAME, COUNT(B.SERIALNUMBER) AS [NUMBEROFBIKESPAINTED]  
+FROM BICYCLE B INNER JOIN PAINT P ON B.PAINTID = P.PAINTID  
+WHERE B.LETTERSTYLEID = 'ENGLISH' AND YEAR(B.ORDERDATE) = '2002'  
+GROUP BY P.COLORNAME, B.PAINTID 
+ORDER BY COUNT(B.SERIALNUMBER) DESC;
+
+--4/5 This query runs and does not have any syntax errors. It should be letter style "Old English" not just "English."
+
+--23. Which race bikes in 2003 sold for more than the average price of race bikes in 2002?
+--SerialNumber	ModelType	OrderDate	SalePrice
+
+ SELECT SERIALNUMBER, MODELTYPE, ORDERDATE, SALEPRICE 
+
+FROM BICYCLE WHERE MODELTYPE = 'RACE' AND YEAR(ORDERDATE) = '2003' AND SALEPRICE >  (SELECT AVG(SALEPRICE)  
+
+FROM BICYCLE  WHERE MODELTYPE = 'RACE' AND YEAR(ORDERDATE) = '2002'      ) ;
+
+--4.5/5 The query rus and does not have any syntax errors. It returns the desired answer. Formating could improve for clarity.
+ 
+--24. Which component that had no sales (installations) in 2004 has the highest inventory value (cost basis)?
+--ManufacturerName	ProductNumber	Category	Value	ComponentID
+
+ SELECT TOP 1 M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY, SUM(C.LISTPRICE * C.QUANTITYONHAND) AS [VALUE], BP.DATEINSTALLED  
+
+FROM MANUFACTURER M INNER JOIN COMPONENT C ON C.MANUFACTURERID = M.MANUFACTURERID                       
+
+                   INNER JOIN BIKEPARTS BP ON C.COMPONENTID = BP.COMPONENTID WHERE YEAR(BP.DATEINSTALLED) NOT LIKE '2004'  
+
+GROUP BY C.LISTPRICE, C.PRODUCTNUMBER, C.CATEGORY, M.MANUFACTURERNAME, BP.DATEINSTALLED  ORDER BY [VALUE] DESC;
+
+--5/5 Query executes correctly and retrieves the correct data.
+ 
+--25. Create a vendor contacts list of all manufacturers and retail stores in California.Include only the columns for VendorName and Phone. The retail stores should only include stores that participated in the sale of at least one bicycle in 2004
+--Store Name Or Manufacturer Name	Phone
+
+ SELECT R.STORENAME, R.PHONE  
+
+FROM RETAILSTORE R INNER JOIN BICYCLE B ON B.STOREID = R.STOREID              
+INNER JOIN CITY C ON C.CITYID = R.CITYID      
+
+WHERE YEAR(B.ORDERDATE) = 2004 AND (C.STATE = 'CA' OR B.SALESTATE = 'CA')  GROUP BY R.STORENAME, R.PHONE 
+
+--5/5 Query executes correctly and retrieves the correct data.
+
+--26. List all of the employees who report to Venetiaan.
+--LastName	EmployeeID	LastName	FirstName	Title
+
+ SELECT (SELECT LASTNAME          
+
+        FROM  EMPLOYEE          
+
+        WHERE EMPLOYEEID = (SELECT EMPLOYEEID                              
+
+                               FROM EMPLOYEE                             
+
+                                WHERE LASTNAME = 'VENETIAAN')) AS [MANAGER NAME], EMPLOYEEID, FIRSTNAME, LASTNAME, TITLE  
+
+FROM EMPLOYEE  
+
+WHERE CURRENTMANAGER = (SELECT EMPLOYEEID                          
+
+                               FROM EMPLOYEE                         
+
+                                WHERE LASTNAME = 'VENETIAAN'       );
+
+--4.5/5 This query runs and does not have any syntax errors. However, it couldve been done in simpler way.
+
+--27. List the components where the company purchased at least 25 percent more units than it used through June 30, 2000.
+--ComponentID	ManufacturerName	ProductNumber	Category	TotalReceived	TotalUsed	NetGain	NetPct	ListPrice
+
+ SELECT C.COMPONENTID, M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY, PI.QUANTITYRECEIVED AS [TOTALRECEIVED],      
+
+        COUNT(BP.DATEINSTALLED) AS [TOTALUSED], ((COUNT(DATEINSTALLED) - PI.QUANTITYRECEIVED) * (C.LISTPRICE - PI.PRICEPAID)) AS [NETGAIN],     ((COUNT(DATEINSTALLED) - PI.QUANTITYRECEIVED) / (C.LISTPRICE - PI.PRICEPAID)) AS [NETPCT], C.LISTPRICE  
+
+FROM COMPONENT C INNER JOIN MANUFACTURER M ON M.MANUFACTURERID = C.MANUFACTURERID       
+
+                       INNER JOIN BIKEPARTS BP ON BP.COMPONENTID = C.COMPONENTID       
+
+                       INNER JOIN PURCHASEITEM PI ON PI.COMPONENTID = C.COMPONENTID       
+
+                       INNER JOIN PURCHASEORDER PO ON PO.PURCHASEID = PI.PURCHASEID  
+
+WHERE PO.RECEIVEDATE <= '30-JUN-2000'  
+
+GROUP BY C.COMPONENTID, M.MANUFACTURERNAME, C.PRODUCTNUMBER, C.CATEGORY, PI.QUANTITYRECEIVED, PI.PRICEPAID, C.LISTPRICE  
+
+HAVING PI.QUANTITYRECEIVED >= 1.25 * COUNT(BP.DATEINSTALLED); 
+
+--5/5 Query executes correctly and retrieves the correct data.
+
+--28. In which years did the average build time for the year exceed the overall average build time for all years? The build time is the difference between order date and ship date.
+--Year	BuildTime
+ 
+SELECT YEAR(ORDERDATE) AS [YEAR], AVG(DATEDIFF(DAY, ORDERDATE, SHIPDATE)) AS [BUILD TIME]  
+
+FROM BICYCLE GROUP BY YEAR(ORDERDATE)  
+
+HAVING  AVG(DATEDIFF(DAY, ORDERDATE, SHIPDATE)) > (                 
+
+SELECT AVG(DATEDIFF(DAY, ORDERDATE, SHIPDATE)) AS [TOTAL AVERAGE] 
+FROM BICYCLE );
+
+--4/5 Mostly right, query executes correctly and retrieves the correct data for 2 of the years. Only problem is that they missed mupliplying the DATEDIFF function by 1.0 and thefore didn't get the most accurate build time results(no floats) and instead got them rounded to integers. They also missed year 2003.

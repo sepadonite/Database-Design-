@@ -1,0 +1,94 @@
+--Group Number: Group 2 
+--Group Members: Michelle Green, Austin Calhoun, Adi Selimovic, La’Daysha Wade, Cooper Jordan, Cameron Peru 
+--1. List owner number and address for every property with a monthly rent of 1500 or more located in the state of WA and city of Seattle. 
+SELECT P.OWNER_NUM, P.ADDRESS
+FROM PROPERTY P
+CROSS JOIN OWNER O
+WHERE MONTHLY_RENT >= 1500 OR STATE = 'WA' AND CITY = 'SEATTLE';
+
+--2. List the number of service requests, and show the average, sum, max, and min of spent hours during service requests. Then show the service requests descriptions with spent hours that are more than 0.
+-- WILL RESULT IN A ERROR BECAUSE DESCRIPTIONS OF MULTIPLE SERVICE REQUEST CANNOT BE SHOWN WHEN USING AGGREATE FUNTIONS
+
+SELECT COUNT(SERVICE_ID), AVG(SPENT_HOURS), SUM(SPENT_HOURS), MAX(SPENT_HOURS), MIN(SPENT_HOURS) /*DESCRIPTION */
+	FROM SERVICE_REQUEST
+	WHERE SERVICE_ID>= ALL(SELECT SERVICE_ID
+							FROM SERVICE_REQUEST
+							WHERE SPENT_HOURS>0);
+
+--3. Using a join operation, find the owner number, first name, last name, address, property ID, and square footage of every owner in Washington or Nevada. Sort the results by square footage in ascending order, and use IN for state inclusion. Use an alias for owner and property tables.
+
+SELECT O.OWNER_NUM, O.FIRST_NAME, O.LAST_NAME, P.ADDRESS, P.PROPERTY_ID, P.SQR_FT
+FROM PROPERTY P
+	INNER JOIN OWNER O
+	ON P.OWNER_NUM = O.OWNER_NUM
+	WHERE O.STATE IN ('WA','NV')
+	g P.SQR_FT ASC;
+
+--4. Show all owner numbers from the property table where the monthly rent is between $1700 and $2000 and the address is not null from the owner's table.
+
+SELECT * 
+	FROM PROPERTY
+	WHERE MONTHLY_RENT BETWEEN 1700 AND 2000 AND ADDRESS IS NOT NULL;
+
+--5. Show the top 3 monthly rent prices from addresses located on a Road or Avenue. Compute a $300 hike to these rent prices and display it as �HIKED_PRICE�. Sort results by monthly rent in descending order.
+
+SELECT TOP (3) MONTHLY_RENT, (MONTHLY_RENT+300) AS HIKED_PRICE
+	FROM PROPERTY 
+	WHERE ADDRESS LIKE '%Rd.' OR ADDRESS LIKE '%Ave.'
+	GROUP BY MONTHLY_RENT 
+	ORDER BY MONTHLY_RENT DESC;
+
+
+--6. Using LEFT JOIN, show the last name, first name, bedroom count, and address of each owner for each property they own. Sort by last names. 
+
+SELECT O.LAST_NAME, O.FIRST_NAME, P.BDRMS, P.ADDRESS 
+	FROM OWNER O
+	LEFT JOIN PROPERTY P
+	ON O.OWNER_NUM = P.OWNER_NUM
+		GROUP BY O.LAST_NAME;
+
+--7. Use full join and union features to display the property ID and address of bedrooms that have 4 bedrooms or have had 2 hours spent on a service request. You may use an alias.
+ 
+SELECT P.PROPERTY_ID, P.ADDRESS
+	FROM PROPERTY P FULL OUTER JOIN SERVICE_REQUEST S
+	ON P.PROPERTY_ID = S.PROPERTY_ID
+		WHERE P.BDRMS=4 OR S.SPENT_HOURS=3
+UNION
+SELECT P.PROPERTY_ID, P.ADDRESS
+	FROM PROPERTY P FULL OUTER JOIN SERVICE_REQUEST S
+	ON P.PROPERTY_ID = S.PROPERTY_ID
+		WHERE P.BDRMS=4 OR S.SPENT_HOURS=3;
+
+
+--8. Show the top 3 unique service request with the highest hours spent working. Show hours saved on each request by comparing the actual work hours to the estimated work hours. Then show the combined results of first names from both residents and owners tables, and order by first name.
+
+SELECT DISTINCT TOP (3) S.SERVICE_ID, (S.SPENT_HOURS-S.EST_HOURS) AS HOURS_SAVED,R. FIRST_NAME,O.FIRST_NAME
+	FROM SERVICE_REQUEST S
+	INNER JOIN RESIDENTS R
+	ON S.PROPERTY_ID = R.PROPERTY_ID
+	INNER JOIN PROPERTY P
+	ON P.PROPERTY_ID = R.PROPERTY_ID
+	INNER JOIN OWNER O
+	ON P.OWNER_NUM = O.OWNER_NUM
+		 WHERE SPENT_HOURS = MAX(SPENT_HOURS)
+		 ORDER BY R.FIRST_NAME, O.FIRST_NAME;
+
+
+--9. Use inner join and intersect features to display the property ID and address of bedrooms that do NOT have 2 bedrooms and have had 0 hours spent on a service request. You may use an alias.
+
+SELECT P.PROPERTY_ID, P.ADDRESS
+FROM PROPERTY P INNER JOIN SERVICE_REQUEST S
+	ON P.PROPERTY_ID = S.PROPERTY_ID
+		WHERE SPENT_HOURS=0 AND NOT BDRMS=2
+INTERSECT
+SELECT P.PROPERTY_ID, P.ADDRESS
+FROM PROPERTY P INNER JOIN SERVICE_REQUEST S
+	ON P.PROPERTY_ID = S.PROPERTY_ID
+		WHERE SPENT_HOURS=0 AND NOT BDRMS=2;
+
+--10. Using a PRODUCT/Cartesian statement, show the bedrooms, floors, first name & last name columns and possible combinations.
+
+SELECT P.BDRMS, P.FLOORS, O.FIRST_NAME, O.LAST_NAME
+FROM PROPERTY P
+ CROSS JOIN OWNER O;
+

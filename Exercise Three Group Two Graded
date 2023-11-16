@@ -1,0 +1,237 @@
+
+
+--Group Number: Group 2 
+
+--Group Members: Michelle Green, Austin Calhoun, Adi Selimovic, La’Daysha Wade, Cooper Jordan, Cameron Peru 
+
+--Answer Grade: (Scale of 0 – 20. Summary of feedback if applicable.) 
+
+Example: 18/18. Queries are all correct. However, the query to question 1 could not be evaluated. Overall, your answers showed a strong understanding of the question in which you effectively conveyed. (See detailed feedback below) 
+
+  
+
+--===================Received Answers, Grade Details & Feedback=========================== 
+
+--On a Scale of 0 – 2, Grade each answer given by comparing it to the solution query your group created. 
+
+NOTE: If the answer query is incorrect/insufficient due to question prompt creation issue. The answer should be graded fairly on the grounds the fault lies in the question. 
+
+--Score of 0: The query does not execute in SQL, results in error message, or is missing.  
+
+--Score of 0.5 to 1.5: The query executes, has some correct elements, but are not fully correct. 
+
+--Score of 2: The query is fully correct and executes without issue. 
+
+--================================ Example Grading==================================== 
+
+-- 0. Retrieve Customer ID, Address of all customers who have a credit limit >= 100 and <= 1200 and have a valid address. Credit limit upper lower bounds must be indicated by special operator and not comparison operators. Valid address means no missing or absence of value.  
+
+  
+
+SELECT CUST_ID, ADDRESS 
+
+FROM CUSTOMER 
+
+WHERE CREDIT_LIMIT BETWEEN 100 AND 1200 AND ADDRESS IS NOT NULL; 
+
+ 
+
+2/2 Query is fully correct and executes without issue.  
+
+ 
+
+SELECT CUSTOMER.CUST_ID, ADDRESS 
+
+FROM CUSTOMER INNER JOIN SALES_REP on CUSTOMER.CUST_ID = SALES_REP.CUST_ID 
+
+WHERE CREDIT_LIMIT BETWEEN 100 AND 1200 AND ADDRESS IS NOT NULL; 
+
+ 
+
+1.5/2 Query executes without issue and yields the requested output. However, joining unnecessary tables causes less records returned than should be. The correct query should be  
+
+SELECT CUST_ID, ADDRESS 
+
+FROM CUSTOMER 
+
+WHERE CREDIT_LIMIT BETWEEN 100 AND 1200 AND ADDRESS IS NOT NULL; 
+
+ *When points are deducted, include the expected solution query. This allows the answer team to see the correct solution or raise concern if applicable. 
+
+--============================== Grading Starts Here==================================== 
+
+1. Find the properties that have been rented out in both the “Residential” and “Commercial” categories, as well as any properties that are listed in both categories. 
+
+New Operators used: N/A 
+
+  
+
+UNABLE TO LOCATE “RESIDENTIAL” AND “COMMERCIAL” CATEGORIES ON STAYWELL DATABASE. UNABLE TO CREATE QUERY WITH INFORMATION PROVIDED. 
+
+ Grading 0/2: The query cannot be evaluated as the information provided does not contain the necessary details to locate the "Residential" and "Commercial" categories in the database. Therefore, no grading feedback can be provided. 
+
+ 
+
+2. Retrieve the property ID, address, and number of residents for properties that have 3 or more residents. 
+
+New Operators used: SELECT, COUNT (), ALIAS, FROM, INNER JOIN, GROUP BY, HAVING 
+
+  
+
+SELECT RESIDENTS.PROPERTY_ID, ADDRESS, COUNT (*) AS NUM_OF_RESIDENTS 
+
+FROM RESIDENTS JOIN PROPERTY ON RESIDENTS.PROPERTY_ID = PROPERTY.PROPERTY_ID 
+
+GROUP BY RESIDENTS.PROPERTY_ID, PROPERTY.ADDRESS 
+
+HAVING COUNT (*) >= 3 
+
+ Grading 2/2: Uses an INNER JOIN to link the RESIDENTS and PROPERTY tables, and the GROUP BY clause groups the results by property ID and address. The HAVING clause filters the results to only include properties with 3 or more residents. The SELECT clause selects the property ID, address, and a count of the number of residents (aliased as "NUM_OF_RESIDENTS"). Query is fully correct and executes without issues 
+
+ 
+
+3. Retrieve the owner number of any owners whose property does not have 2 floors. 
+
+New Operators used: WHERE,!= 
+
+  
+
+SELECT OWNER_NUM 
+FROM PROPERTY 
+WHERE FLOORS != '2'; 
+
+ Grading 2/2: The query uses the WHERE clause with the not equal to operator (!=) to retrieve the owner numbers of all properties that do not have 2 floors. Query is fully correct and executes without issues 
+
+ 
+
+4. What is the average monthly rent of the top 5 properties? 
+
+New Operators used: AVG (), TOP N, IN, Nested Query, ORDER BY, DESC 
+
+  
+
+SELECT AVG (MONTHLY_RENT) AS TOP5_AVG_RENT 
+FROM PROPERTY 
+WHERE MONTHLY_RENT IN 
+( 
+SELECT TOP 5 MONTHLY_RENT AS TOP5_RENT 
+FROM PROPERTY 
+ORDER BY MONTHLY_RENT DESC 
+); 
+
+Grading 2/2: The query retrieves the average monthly rent of the top 5 properties by using a nested subquery to select the top 5 monthly rents in descending order and then using the AVG () function to calculate their average. Query is fully correct and executes without issues 
+
+  
+
+5. What is the largest and smallest property size(sqr feet) available? 
+
+New Operators used: MIN (), MAX () 
+
+  
+
+SELECT MIN(SQR_FT) AS MIN_FT, MAX(SQR_FT) AS MAX_FT 
+
+FROM PROPERTY; 
+
+ Grading 2/2: Correctly uses the MIN () and MAX () elements to retrieve the smallest and largest property sizes. Query is fully correct and executes without issues 
+
+ 
+
+6. Form the product of service request and property tables. Retrieve the service id of the service requests that do not have a next service date yet or whose status has been confirmed (contains the word confirmed) AND have two floors. 
+
+New Operators used: Cartesian Join, NULL, OR LIKE %, AND 
+
+  
+
+SELECT SERVICE_ID 
+
+FROM PROPERTY CROSS JOIN SERVICE_REQUEST 
+
+WHERE NEXT_SERVICE_DATE = NULL OR (STATUS LIKE '%confirmed%' AND PROPERTY.FLOORS = 2); 
+
+ Grading 2/2: The query forms a Cartesian join between the Service_Request and Property tables. It retrieves the service ID of the service requests that do not have a next service date or whose status contains the word "confirmed" and have two floors, using the NULL operator, the OR operator, the LIKE operator with the %, and the AND operator. Query is fully correct and executes without issues. 
+
+ 
+
+ 
+
+7. Retrieve the office id and sum of the monthly rent for ONLY the office 1 properties whose square footage is between 1500 and 3000. 
+
+New Operators used: SUM (), BETWEEN 
+
+  
+
+SELECT OFFICE_NUM, SUM(MONTHLY_RENT) AS TOTAL_MONTHLY_RENT 
+
+FROM PROPERTY 
+
+WHERE OFFICE_NUM = 1 AND SQR_FT BETWEEN 1500 AND 3000 
+
+GROUP BY OFFICE_NUM; 
+
+ Grading 2/2: The Query correctly uses the SUM () and BETWEEN operators to retrieve the office id and sum of the monthly rent for office 1 properties with square footage between 1500 and 3000. Lastly, the query groups the results by office number. Query is fully correct and executes without issues. 
+
+ 
+
+ 
+
+8. Retrieve the distinct cities and owner number of the owners whose property is managed by office 1. Sort the list in descending order by city. 
+
+New Operators used: DISTINCT 
+
+  
+
+SELECT DISTINCT CITY, OWNER_NUM 
+FROM OWNER 
+WHERE CITY IN (SELECT CITY FROM OFFICE WHERE OFFICE_NUM = 1) 
+
+ORDER BY CITY DESC; 
+
+Grading 2/2: The query is correctly using the DISTINCT keyword to only return distinct cities and owner numbers. The WHERE clause filters the results to only include cities managed by office 1, using a subquery to retrieve the relevant cities. Lastly the ORDER BY element sorts the results in a descending order by city. Query is fully correct and executes without issues. 
+
+ 
+
+9. For each pair of owners located in the same state, display the owner number, their first and last names and the state. 
+
+New Operators used: N/A 
+
+  
+
+SELECT OWNER_NUM, FIRST_NAME, LAST_NAME, STATE 
+
+FROM OWNER 
+
+WHERE STATE IN (SELECT STATE FROM OWNER GROUP BY STATE HAVING COUNT (*) > 1); 
+
+ Grading 2/2: Query is fully correct and executes without issues, selecting only the required columns and using a subquery to filter the results based on the condition of having multiple owners in the same state. 
+
+ 
+
+ 
+
+10. Retrieve the property IDs, addresses, and the number of residents for properties that have a resident with a name LIKE 'John%' and have at least one resident. 
+
+New Operators used: N/A 
+
+  
+
+SELECT RESIDENTS.PROPERTY_ID, ADDRESS, COUNT (*) AS NUMBER_OF_RESIDENTS 
+
+FROM RESIDENTS INNER JOIN PROPERTY ON RESIDENTS.PROPERTY_ID = PROPERTY.PROPERTY_ID 
+
+WHERE RESIDENTS.FIRST_NAME LIKE '%John%' 
+
+GROUP BY RESIDENTS.PROPERTY_ID, PROPERTY.ADDRESS 
+
+HAVING COUNT (*) >= 1 
+
+ORDER BY RESIDENTS.PROPERTY_ID; 
+
+ 
+Grading 2/2: The query uses the appropriate table joins, filtering conditions, and grouping to achieve the desired result. Query is fully correct and executes without issues. 
+
+  
+
+ 
+
+ 
